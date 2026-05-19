@@ -330,15 +330,13 @@ function applyCardEffect(card) {
 
     if (card.cardType === 'evento') {
         switch (card.action) {
+            case 'ADD_NEXT_TEAM_ROLL':
+                gameState.bonusDice += card.value;
+                gameState.discardPile.push(card);
+                break;
+
             case 'ADD_DICE':
                 gameState.bonusDice += card.value;
-                if (gameState.selectedStory && gameState.turnActions.hoursDeducted) {
-                    gameState.selectedStory.remainingHours -= card.value;
-                    if (gameState.selectedStory.remainingHours < 0) {
-                        gameState.selectedStory.remainingHours = 0;
-                    }
-                    checkStoryCompletion(gameState.selectedStory);
-                }
                 gameState.discardPile.push(card);
                 break;
 
