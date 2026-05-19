@@ -113,6 +113,13 @@ function createSprintSummary(state) {
     };
 }
 
+function assertTurnComplete(state) {
+    const { selected, diceRolled, hoursDeducted, cardDrawn } = state.turnActions;
+    if (!selected || !diceRolled || !hoursDeducted || !cardDrawn) {
+        throw new Error("Turn is incomplete");
+    }
+}
+
 export function createInitialTeamState({ teamName, totalSprints, catalog }) {
     return {
         teamName,
@@ -312,6 +319,7 @@ function applyEventCard(next, card, targetStoryId) {
 
 export function endTurn(state, { participantId }) {
     assertCanAct(state, participantId);
+    assertTurnComplete(state);
 
     const next = clone(state);
     const index = activeParticipantIndex(next);

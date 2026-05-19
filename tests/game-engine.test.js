@@ -20,6 +20,7 @@ function readyState() {
 
 function completeStory(state, catalog, storyId = 1) {
   state = selectStoryForTurn(state, { participantId: state.activeParticipantId, storyId });
+  state = rollDiceForSelectedStory(state, { participantId: state.activeParticipantId, dice: [3, 4] });
   return applyCardToState(state, {
     participantId: state.activeParticipantId,
     card: { ...catalog.events[3], cardType: "evento" },
@@ -27,7 +28,24 @@ function completeStory(state, catalog, storyId = 1) {
   });
 }
 
+function completeTurn(state, catalog, storyId = 2) {
+  state = selectStoryForTurn(state, { participantId: state.activeParticipantId, storyId });
+  state = rollDiceForSelectedStory(state, { participantId: state.activeParticipantId, dice: [1, 1] });
+  return applyCardToState(state, {
+    participantId: state.activeParticipantId,
+    card: { ...catalog.events[1], cardType: "evento" }
+  });
+}
+
 describe("game-engine rules", () => {
+  test("rejects ending a turn before required actions are complete", () => {
+    const { state } = readyState();
+
+    expect(() => endTurn(state, { participantId: "p1" })).toThrow("Turn is incomplete");
+    expect(state.activeParticipantId).toBe("p1");
+    expect(state.currentDay).toBe(1);
+  });
+
   test("rejects rolling dice when the selected story has zero remaining hours", () => {
     let { state } = readyState();
     state = selectStoryForTurn(state, { participantId: "p1", storyId: 1 });
@@ -53,6 +71,7 @@ describe("game-engine rules", () => {
     expect(state.backlog[0].problems).toHaveLength(1);
 
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
     state = applyCardToState(state, {
       participantId: "p1",
@@ -95,6 +114,8 @@ describe("game-engine rules", () => {
 
   test("+4 next roll applies to the next team participant and is consumed once", () => {
     let { state, catalog } = readyState();
+    state = selectStoryForTurn(state, { participantId: "p1", storyId: 2 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
     state = applyCardToState(state, {
       participantId: "p1",
       card: { ...catalog.events[0], cardType: "evento" }
@@ -132,16 +153,21 @@ describe("game-engine rules", () => {
     expect(state.activeParticipantId).toBe("p2");
     expect(state.currentDay).toBe(1);
 
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
     expect(state.activeParticipantId).toBe("p1");
     expect(state.currentDay).toBe(2);
 
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
     expect(state.currentDay).toBe(3);
     expect(state.currentSprint).toBe(1);
 
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
 
     expect(state.currentDay).toBe(1);
@@ -149,7 +175,7 @@ describe("game-engine rules", () => {
     expect(state.sprintHistory).toHaveLength(1);
     expect(state.sprintHistory[0]).toMatchObject({
       sprint: 1,
-      committedStoryIds: [1],
+      committedStoryIds: [1, 2],
       doneStoryIds: [1],
       points: 18
     });
@@ -159,6 +185,7 @@ describe("game-engine rules", () => {
     let { state, catalog } = readyState();
     state = completeStory(state, catalog, 1);
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
 
     state = applyCardToState(state, {
@@ -176,6 +203,7 @@ describe("game-engine rules", () => {
     let { state, catalog } = readyState();
     state = completeStory(state, catalog, 1);
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
 
     state = applyCardToState(state, {
@@ -193,8 +221,11 @@ describe("game-engine rules", () => {
     let { state, catalog } = readyState();
     state = completeStory(state, catalog, 1);
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
 
+    state = selectStoryForTurn(state, { participantId: "p1", storyId: 3 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
     state = applyCardToState(state, {
       participantId: "p1",
       card: { ...catalog.problems[0], cardType: "problema" },
@@ -206,7 +237,10 @@ describe("game-engine rules", () => {
     expect(state.totalPoints).toBe(0);
 
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
+    state = selectStoryForTurn(state, { participantId: "p1", storyId: 3 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
     state = applyCardToState(state, {
       participantId: "p1",
       card: { ...catalog.solutions[0], cardType: "solucion" },
@@ -274,6 +308,7 @@ describe("game-engine rules", () => {
     const problem = { ...catalog.problems[0], cardType: "problema" };
 
     state = selectStoryForTurn(state, { participantId: "p1", storyId: 1 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
     state = applyCardToState(state, {
       participantId: "p1",
       card: problem,
@@ -284,8 +319,11 @@ describe("game-engine rules", () => {
     expect(state.backlog[0].problems[0].name).toBe(catalog.problems[0].name);
 
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
     const solution = { ...catalog.solutions[1], cardType: "solucion" };
+    state = selectStoryForTurn(state, { participantId: "p1", storyId: 2 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
     state = applyCardToState(state, {
       participantId: "p1",
       card: solution
@@ -295,8 +333,11 @@ describe("game-engine rules", () => {
     expect(state.solutions[0].name).toBe(catalog.solutions[1].name);
 
     state = endTurn(state, { participantId: "p1" });
+    state = completeTurn(state, catalog);
     state = endTurn(state, { participantId: "p2" });
     const event = { ...catalog.events[0], cardType: "evento" };
+    state = selectStoryForTurn(state, { participantId: "p1", storyId: 2 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
     state = applyCardToState(state, {
       participantId: "p1",
       card: event
