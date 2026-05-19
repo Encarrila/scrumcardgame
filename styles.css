@@ -805,3 +805,63 @@ body {
         min-height: 400px;
     }
 }
+
+.hidden {
+    display: none !important;
+}
+
+.remote-page {
+    min-height: 100vh;
+    background: #eef2f6;
+    color: var(--text-primary);
+}
+
+.remote-header {
+    background: #ffffff;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+}
+
+.remote-header h1 {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+}
+
+.remote-header p {
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.remote-panel {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin: 1rem;
+    padding: 1rem;
+}
+
+.remote-panel label {
+    display: block;
+    font-weight: 600;
+    margin: 0.75rem 0 0.35rem;
+}
+
+.remote-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.team-summary {
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.team-summary h2 {
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
