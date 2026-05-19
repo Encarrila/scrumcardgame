@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrum Card Game - RRHH Edition</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Pantalla de Configuracion -->
+        <div id="config-screen" class="screen active">
+            <div class="config-container">
+                <h1>Scrum Card Game</h1>
+                <h2>Edicion Recursos Humanos</h2>
+                <p class="subtitle">Maestria en Recursos Humanos</p>
+
+                <div class="config-section">
+                    <h3>Configuracion del Equipo</h3>
+
+                    <div class="config-group">
+                        <label for="team-name">Nombre del equipo:</label>
+                        <input type="text" id="team-name" value="Mi Equipo" class="text-input">
+                    </div>
+
+                    <div class="config-group">
+                        <label for="team-members">Cantidad de integrantes:</label>
+                        <div class="number-input">
+                            <button type="button" onclick="adjustValue('team-members', -1)">-</button>
+                            <input type="number" id="team-members" value="4" min="2" max="8">
+                            <button type="button" onclick="adjustValue('team-members', 1)">+</button>
+                        </div>
+                    </div>
+
+                    <div class="config-group">
+                        <label for="num-sprints">Cantidad de Sprints:</label>
+                        <div class="number-input">
+                            <button type="button" onclick="adjustValue('num-sprints', -1)">-</button>
+                            <input type="number" id="num-sprints" value="2" min="1" max="5">
+                            <button type="button" onclick="adjustValue('num-sprints', 1)">+</button>
+                        </div>
+                    </div>
+
+                    <button id="start-game" class="btn-primary" onclick="startGame()">
+                        Comenzar Juego
+                    </button>
+                </div>
+
+                <div class="rules-summary">
+                    <h4>Resumen de Reglas</h4>
+                    <ul>
+                        <li>Cada sprint dura 3 dias</li>
+                        <li>Cada dia, cada jugador: selecciona historia, tira dados, descuenta horas, toma carta de oportunidad</li>
+                        <li>Historias completadas: 0 horas y sin bloqueos</li>
+                        <li>Problemas bloquean historias hasta encontrar la solucion</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pantalla de Juego -->
+        <div id="game-screen" class="screen">
+            <header class="game-header">
+                <div class="header-left">
+                    <h1>Scrum Card Game RRHH</h1>
+                    <div class="game-info">
+                        <span id="current-team">Mi Equipo</span>
+                        <span id="current-sprint">Sprint 1</span>
+                        <span id="current-day">Dia 1</span>
+                        <span id="current-player">Jugador 1</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button class="btn-secondary" onclick="showRules()">Reglas</button>
+                    <button class="btn-secondary" onclick="showStats()">Estadisticas</button>
+                </div>
+            </header>
+
+            <main class="game-main">
+                <!-- Panel izquierdo: Backlog y Oportunidades -->
+                <aside class="left-panel">
+                    <div class="deck-section">
+                        <h3>Backlog de Historias</h3>
+                        <div id="backlog-deck" class="card-deck" onclick="showBacklog()">
+                            <div class="deck-card historia">
+                                <span class="deck-count" id="backlog-count">16</span>
+                                <span>Historias</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="deck-section">
+                        <h3>Mazo Oportunidad</h3>
+                        <div id="opportunity-deck" class="card-deck">
+                            <div class="deck-card oportunidad" onclick="drawOpportunityCard()">
+                                <span class="deck-count" id="opportunity-count">24</span>
+                                <span>Cartas</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="solutions-section">
+                        <h3>Soluciones del Equipo</h3>
+                        <div id="team-solutions" class="solutions-list">
+                            <p class="empty-message">Sin soluciones aun</p>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Panel central: Tablero Kanban -->
+                <section class="kanban-board">
+                    <div class="kanban-column" id="todo-column">
+                        <h3>TO DO <span class="column-count" id="todo-count">0</span></h3>
+                        <div class="column-content" id="todo-cards"></div>
+                    </div>
+                    <div class="kanban-column" id="doing-column">
+                        <h3>DOING <span class="column-count" id="doing-count">0</span></h3>
+                        <div class="column-content" id="doing-cards"></div>
+                    </div>
+                    <div class="kanban-column" id="done-column">
+                        <h3>DONE <span class="column-count" id="done-count">0</span></h3>
+                        <div class="column-content" id="done-cards"></div>
+                    </div>
+                </section>
+
+                <!-- Panel derecho: Acciones y estado -->
+                <aside class="right-panel">
+                    <div class="dice-section">
+                        <h3>Dados (Horas Productivas)</h3>
+                        <div class="dice-container">
+                            <div class="die" id="die1">?</div>
+                            <div class="die" id="die2">?</div>
+                        </div>
+                        <div class="dice-total">Total: <span id="dice-result">-</span> horas</div>
+                        <button id="roll-dice" class="btn-primary" onclick="rollDice()">Tirar Dados</button>
+                    </div>
+
+                    <div class="turn-actions">
+                        <h3>Acciones del Turno</h3>
+                        <div class="action-checklist">
+                            <label class="action-item">
+                                <input type="checkbox" id="action-select" disabled>
+                                <span>1. Seleccionar Historia</span>
+                            </label>
+                            <label class="action-item">
+                                <input type="checkbox" id="action-dice" disabled>
+                                <span>2. Tirar Dados</span>
+                            </label>
+                            <label class="action-item">
+                                <input type="checkbox" id="action-work" disabled>
+                                <span>3. Descontar Horas</span>
+                            </label>
+                            <label class="action-item">
+                                <input type="checkbox" id="action-card" disabled>
+                                <span>4. Tomar Carta Oportunidad</span>
+                            </label>
+                        </div>
+                        <button id="end-turn" class="btn-primary" onclick="endTurn()" disabled>
+                            Terminar Turno
+                        </button>
+                    </div>
+
+                    <div class="active-problems">
+                        <h3>Problemas Activos</h3>
+                        <div id="problems-list" class="problems-list">
+                            <p class="empty-message">Sin problemas</p>
+                        </div>
+                    </div>
+                </aside>
+            </main>
+        </div>
+
+        <!-- Modal para mostrar carta -->
+        <div id="card-modal" class="modal">
+            <div class="modal-content">
+                <div id="modal-card" class="card-display"></div>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="closeCardModal()">Entendido</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para seleccionar historia del backlog -->
+        <div id="backlog-modal" class="modal">
+            <div class="modal-content wide">
+                <h2>Seleccionar Historia para el Sprint</h2>
+                <div id="backlog-list" class="backlog-grid"></div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeBacklogModal()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para reglas -->
+        <div id="rules-modal" class="modal">
+            <div class="modal-content wide">
+                <h2>Reglas del Juego</h2>
+                <div class="rules-content">
+                    <h3>Objetivo</h3>
+                    <p>Completar la mayor cantidad de Historias de Usuario durante los sprints.</p>
+
+                    <h3>Flujo del Turno</h3>
+                    <ol>
+                        <li><strong>Seleccionar Historia:</strong> Elige una historia del TO DO o continua trabajando en una de DOING</li>
+                        <li><strong>Tirar Dados:</strong> El resultado son tus horas productivas del dia</li>
+                        <li><strong>Descontar Horas:</strong> Resta las horas de la historia seleccionada</li>
+                        <li><strong>Carta Oportunidad:</strong> Toma una carta y aplica su efecto</li>
+                    </ol>
+
+                    <h3>Tipos de Cartas</h3>
+                    <ul>
+                        <li><strong>Eventos:</strong> Efectos inmediatos (positivos o negativos)</li>
+                        <li><strong>Problemas:</strong> Bloquean historias hasta encontrar solucion</li>
+                        <li><strong>Soluciones:</strong> Desbloquean problemas especificos</li>
+                    </ul>
+
+                    <h3>Historia Completada</h3>
+                    <p>Una historia esta DONE cuando tiene 0 horas restantes Y no tiene problemas bloqueandola.</p>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="closeRulesModal()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para estadisticas -->
+        <div id="stats-modal" class="modal">
+            <div class="modal-content wide">
+                <h2>Estadisticas del Equipo</h2>
+                <div id="stats-content"></div>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="closeStatsModal()">Cerrar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para seleccionar historia (efectos de cartas) -->
+        <div id="story-selector-modal" class="modal">
+            <div class="modal-content">
+                <h2>Seleccionar Historia</h2>
+                <p id="story-selector-message" style="margin-bottom: 1rem; color: #64748b;"></p>
+                <div id="story-selector-list" class="backlog-grid" style="max-height: 400px; overflow-y: auto;"></div>
+                <div class="modal-actions">
+                    <button class="btn-secondary" onclick="closeStorySelectorModal()">Cancelar (sin efecto)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de fin de sprint -->
+        <div id="sprint-end-modal" class="modal">
+            <div class="modal-content wide">
+                <h2>Fin del Sprint <span id="ended-sprint-num"></span></h2>
+                <div id="sprint-summary"></div>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="startNextSprint()">Siguiente Sprint</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de fin de juego -->
+        <div id="game-end-modal" class="modal">
+            <div class="modal-content wide">
+                <h2>Fin del Juego</h2>
+                <div id="final-results"></div>
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="restartGame()">Nuevo Juego</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para aplicar solucion -->
+        <div id="solution-modal" class="modal">
+            <div class="modal-content">
+                <h2>Aplicar Solucion</h2>
+                <div id="solution-details"></div>
+                <div class="modal-actions">
+                    <button class="btn-primary" id="apply-solution-btn">Aplicar</button>
+                    <button class="btn-secondary" onclick="closeSolutionModal()">Guardar para despues</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="game-data.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

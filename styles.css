@@ -1,0 +1,807 @@
+/* Reset y variables */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary-color: #64748b;
+    --success-color: #22c55e;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --background: #f1f5f9;
+    --card-bg: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+
+    --historia-color: #3b82f6;
+    --evento-positive: #22c55e;
+    --evento-negative: #f59e0b;
+    --problema-color: #ef4444;
+    --solucion-color: #a855f7;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--background);
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+/* Screens */
+.screen {
+    display: none;
+    min-height: 100vh;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* Config Screen */
+.config-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.config-container h1 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 0.5rem;
+}
+
+.config-container h2 {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    text-align: center;
+    font-weight: normal;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    text-align: center;
+    color: var(--secondary-color);
+    margin-bottom: 2rem;
+    font-style: italic;
+}
+
+.config-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    margin-bottom: 1.5rem;
+}
+
+.config-section h3 {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 0.5rem;
+}
+
+.config-group {
+    margin-bottom: 1.5rem;
+}
+
+.config-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.number-input {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.number-input button {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    background: var(--card-bg);
+    border-radius: 8px;
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.number-input button:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.number-input input {
+    width: 60px;
+    height: 40px;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1.25rem;
+}
+
+.text-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.text-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.team-config {
+    background: var(--background);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.team-config h4 {
+    margin-bottom: 0.75rem;
+    color: var(--primary-color);
+}
+
+/* Buttons */
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+    background: var(--secondary-color);
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    border: 2px solid var(--border-color);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.rules-summary {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+.rules-summary h4 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.rules-summary ul {
+    list-style-position: inside;
+    color: var(--text-secondary);
+}
+
+.rules-summary li {
+    margin-bottom: 0.5rem;
+}
+
+/* Game Screen */
+#game-screen {
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#game-screen.active {
+    display: flex;
+}
+
+.game-header {
+    background: var(--card-bg);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+}
+
+.header-left h1 {
+    font-size: 1.25rem;
+    color: var(--primary-color);
+}
+
+.game-info {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.game-info span {
+    background: var(--background);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.header-right {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.game-main {
+    display: grid;
+    grid-template-columns: 250px 1fr 280px;
+    gap: 1rem;
+    padding: 1rem;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Left Panel */
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+}
+
+.deck-section, .solutions-section {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.deck-section h3, .solutions-section h3 {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.card-deck {
+    cursor: pointer;
+}
+
+.deck-card {
+    padding: 2rem 1rem;
+    border-radius: 8px;
+    text-align: center;
+    color: white;
+    font-weight: 600;
+    transition: transform 0.2s;
+}
+
+.deck-card:hover {
+    transform: scale(1.02);
+}
+
+.deck-card.historia {
+    background: linear-gradient(135deg, var(--historia-color), #1d4ed8);
+}
+
+.deck-card.oportunidad {
+    background: linear-gradient(135deg, var(--solucion-color), #7c3aed);
+}
+
+.deck-count {
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
+}
+
+.solutions-list {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.solution-item {
+    background: var(--solucion-color);
+    color: white;
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.solution-item:hover {
+    opacity: 0.9;
+}
+
+.empty-message {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+/* Kanban Board */
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    overflow: hidden;
+}
+
+.kanban-column {
+    background: var(--card-bg);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.kanban-column h3 {
+    padding: 1rem;
+    font-size: 1rem;
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+#todo-column h3 { border-bottom-color: var(--secondary-color); }
+#doing-column h3 { border-bottom-color: var(--warning-color); }
+#done-column h3 { border-bottom-color: var(--success-color); }
+
+.column-count {
+    background: var(--background);
+    padding: 0.125rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+
+.column-content {
+    padding: 0.75rem;
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Story Cards */
+.story-card {
+    background: white;
+    border: 2px solid var(--historia-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.story-card:hover {
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+.story-card.selected {
+    border-color: var(--success-color);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+
+.story-card.blocked {
+    border-color: var(--danger-color);
+    background: #fef2f2;
+}
+
+.story-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.story-id {
+    background: var(--historia-color);
+    color: white;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.story-hours {
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.story-hours.zero {
+    color: var(--success-color);
+}
+
+.story-description {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.story-blocked-badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--danger-color);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+}
+
+/* Right Panel */
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+}
+
+.dice-section, .turn-actions, .active-problems {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.dice-section h3, .turn-actions h3, .active-problems h3 {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.dice-container {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.die {
+    width: 60px;
+    height: 60px;
+    background: white;
+    border: 3px solid var(--primary-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.die.rolling {
+    animation: roll 0.3s ease-in-out infinite;
+}
+
+@keyframes roll {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(10deg); }
+    75% { transform: rotate(-10deg); }
+}
+
+.dice-total {
+    text-align: center;
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.action-checklist {
+    margin-bottom: 1rem;
+}
+
+.action-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 6px;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.action-item input:checked + span {
+    text-decoration: line-through;
+    color: var(--success-color);
+}
+
+.problems-list {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.problem-item {
+    background: #fef2f2;
+    border: 1px solid var(--danger-color);
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+}
+
+.problem-item .problem-name {
+    font-weight: 600;
+    color: var(--danger-color);
+}
+
+.problem-item .problem-story {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+}
+
+.modal-content.wide {
+    max-width: 800px;
+    width: 90%;
+}
+
+.modal-content h2 {
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+}
+
+.modal-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+}
+
+.modal-actions .btn-primary,
+.modal-actions .btn-secondary {
+    width: auto;
+}
+
+/* Card Display */
+.card-display {
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    min-height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.card-display.historia {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    border: 3px solid var(--historia-color);
+}
+
+.card-display.evento-positive {
+    background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+    border: 3px solid var(--evento-positive);
+}
+
+.card-display.evento-negative {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border: 3px solid var(--evento-negative);
+}
+
+.card-display.problema {
+    background: linear-gradient(135deg, #fee2e2, #fecaca);
+    border: 3px solid var(--problema-color);
+}
+
+.card-display.solucion {
+    background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+    border: 3px solid var(--solucion-color);
+}
+
+.card-type {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.card-effect {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.card-hours {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-top: 1rem;
+}
+
+/* Backlog Grid */
+.backlog-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.backlog-card {
+    background: white;
+    border: 2px solid var(--historia-color);
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.backlog-card:hover {
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    transform: translateY(-2px);
+}
+
+.backlog-card.in-sprint {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-style: dashed;
+}
+
+/* Scoreboard */
+.scoreboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.scoreboard-table th,
+.scoreboard-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.scoreboard-table th {
+    background: var(--background);
+    font-weight: 600;
+}
+
+.scoreboard-table tr:hover {
+    background: var(--background);
+}
+
+/* Sprint Summary */
+.sprint-summary-section {
+    margin-bottom: 1.5rem;
+}
+
+.sprint-summary-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.75rem;
+}
+
+.completed-stories-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.completed-story-tag {
+    background: var(--success-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.incomplete-story-tag {
+    background: var(--warning-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+/* Rules Content */
+.rules-content h3 {
+    color: var(--primary-color);
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.rules-content h3:first-child {
+    margin-top: 0;
+}
+
+.rules-content ol, .rules-content ul {
+    margin-left: 1.5rem;
+}
+
+.rules-content li {
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+    .game-main {
+        grid-template-columns: 200px 1fr 250px;
+    }
+}
+
+@media (max-width: 900px) {
+    .game-main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+    }
+
+    .left-panel, .right-panel {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .kanban-board {
+        min-height: 400px;
+    }
+}
