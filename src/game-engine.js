@@ -51,6 +51,13 @@ function markCompleted(next, story) {
     }
 }
 
+function unmarkCompleted(next, story) {
+    if (next.completedStoryIds.includes(story.id)) {
+        next.completedStoryIds = next.completedStoryIds.filter((storyId) => storyId !== story.id);
+        next.totalPoints = Math.max(0, next.totalPoints - story.originalHours);
+    }
+}
+
 function checkStoryCompletion(next, story) {
     if (story.remainingHours <= 0) {
         story.remainingHours = 0;
@@ -59,6 +66,51 @@ function checkStoryCompletion(next, story) {
             markCompleted(next, story);
         }
     }
+}
+
+function reopenStory(next, story) {
+    if (story.status === "done") {
+        story.status = "doing";
+    }
+    unmarkCompleted(next, story);
+}
+
+function validateDice(dice) {
+    if (
+        !Array.isArray(dice) ||
+        dice.length !== 2 ||
+        dice.some((value) => !Number.isInteger(value) || value < 1 || value > 6)
+    ) {
+        throw new Error("Dice must be exactly two integers from 1 to 6");
+    }
+}
+
+function isDrawAgain(card) {
+    return card.cardType === "evento" && card.action === "DRAW_AGAIN";
+}
+
+function assertCanDrawCard(state, card) {
+    if (state.turnActions.cardDrawn && !isDrawAgain(card)) {
+        throw new Error("Card was already drawn this turn");
+    }
+}
+
+function markCardDrawn(next, card) {
+    if (!isDrawAgain(card)) {
+        next.turnActions.cardDrawn = true;
+    }
+}
+
+function createSprintSummary(state) {
+    const committedStories = state.backlog.filter((story) => story.inSprint);
+    const doneStories = committedStories.filter((story) => story.status === "done");
+
+    return {
+        sprint: state.currentSprint,
+        committedStoryIds: committedStories.map((story) => story.id),
+        doneStoryIds: doneStories.map((story) => story.id),
+        points: doneStories.reduce((total, story) => total + story.originalHours, 0)
+    };
 }
 
 export function createInitialTeamState({ teamName, totalSprints, catalog }) {
@@ -113,6 +165,10 @@ export function setSessionPaused(state, paused) {
 export function selectStoryForTurn(state, { participantId, storyId }) {
     assertCanAct(state, participantId);
 
+    if (state.turnActions.diceRolled) {
+        throw new Error("Cannot select another story after dice are rolled");
+    }
+
     const next = clone(state);
     const story = findStory(next, storyId);
 
@@ -136,6 +192,7 @@ export function selectStoryForTurn(state, { participantId, storyId }) {
 
 export function rollDiceForSelectedStory(state, { participantId, dice }) {
     assertCanAct(state, participantId);
+    validateDice(dice);
 
     if (!state.selectedStoryId) {
         throw new Error("Select a story before rolling dice");
@@ -167,49 +224,49 @@ export function rollDiceForSelectedStory(state, { participantId, dice }) {
 
 export function applyCardToState(state, { participantId, card, targetStoryId }) {
     assertCanAct(state, participantId);
+    assertCanDrawCard(state, card);
 
     const next = clone(state);
+    const storedCard = clone(card);
 
-    if (card.cardType === "evento") {
-        applyEventCard(next, card, targetStoryId);
-        next.turnActions.cardDrawn = true;
+    if (storedCard.cardType === "evento") {
+        applyEventCard(next, storedCard, targetStoryId);
+        markCardDrawn(next, storedCard);
         return next;
     }
 
-    if (card.cardType === "problema") {
+    if (storedCard.cardType === "problema") {
         const story = findStory(next, targetStoryId ?? next.selectedStoryId);
-        story.problems.push(card);
-        if (story.status === "done") {
-            story.status = "doing";
-        }
-        next.turnActions.cardDrawn = true;
+        story.problems.push(storedCard);
+        reopenStory(next, story);
+        markCardDrawn(next, storedCard);
         return next;
     }
 
-    if (card.cardType === "solucion") {
+    if (storedCard.cardType === "solucion") {
         const stories = targetStoryId ? [findStory(next, targetStoryId)] : next.backlog;
 
         for (const story of stories) {
             const problemIndex = story.problems.findIndex((problem) => (
-                problem.solutionId === card.id || problem.id === card.resolvesId
+                problem.solutionId === storedCard.id || problem.id === storedCard.resolvesId
             ));
 
             if (problemIndex !== -1) {
                 const [problem] = story.problems.splice(problemIndex, 1);
-                next.discardPile.push(problem, card);
+                next.discardPile.push(clone(problem), storedCard);
                 checkStoryCompletion(next, story);
-                next.turnActions.cardDrawn = true;
+                markCardDrawn(next, storedCard);
                 return next;
             }
         }
 
-        next.solutions.push(card);
-        next.turnActions.cardDrawn = true;
+        next.solutions.push(storedCard);
+        markCardDrawn(next, storedCard);
         return next;
     }
 
-    next.discardPile.push(card);
-    next.turnActions.cardDrawn = true;
+    next.discardPile.push(storedCard);
+    markCardDrawn(next, storedCard);
     return next;
 }
 
@@ -229,9 +286,7 @@ function applyEventCard(next, card, targetStoryId) {
     if (card.action === "ADD_HOURS") {
         const story = findStory(next, targetStoryId ?? next.selectedStoryId);
         story.remainingHours += card.value;
-        if (story.status === "done") {
-            story.status = "doing";
-        }
+        reopenStory(next, story);
         next.discardPile.push(card);
         return;
     }
@@ -247,9 +302,7 @@ function applyEventCard(next, card, targetStoryId) {
     if (card.action === "RESET_STORY") {
         const story = findStory(next, targetStoryId ?? next.selectedStoryId);
         story.remainingHours = story.originalHours;
-        if (story.status === "done") {
-            story.status = "doing";
-        }
+        reopenStory(next, story);
         next.discardPile.push(card);
         return;
     }
@@ -263,11 +316,21 @@ export function endTurn(state, { participantId }) {
     const next = clone(state);
     const index = activeParticipantIndex(next);
     const nextIndex = index === -1 ? 0 : (index + 1) % next.participants.length;
+    const completedDay = next.participants.length > 0 && nextIndex === 0;
 
     next.activeParticipantId = next.participants[nextIndex]?.id ?? null;
     next.selectedStoryId = null;
     next.diceResult = null;
     next.turnActions = createTurnActions();
+
+    if (completedDay) {
+        next.currentDay += 1;
+        if (next.currentDay > 3) {
+            next.sprintHistory.push(createSprintSummary(next));
+            next.currentSprint += 1;
+            next.currentDay = 1;
+        }
+    }
 
     return next;
 }
