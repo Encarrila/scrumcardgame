@@ -367,6 +367,7 @@ function applyCardEffect(card) {
                 showStorySelector('negative', card, 'Selecciona la historia que perdera todo su progreso:');
                 return; // No cerrar modal aun
 
+            case 'REDUCE_NEXT_TEAM_ROLL':
             case 'REDUCE_ALL_DICE':
                 gameState.bonusDice -= card.value;
                 gameState.discardPile.push(card);
