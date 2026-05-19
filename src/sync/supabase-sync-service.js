@@ -10,6 +10,37 @@ function randomCode(prefix) {
   return `${prefix}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
+function normalizeSession(row) {
+  if (!row) {
+    return row;
+  }
+  return {
+    id: row.id,
+    name: row.name,
+    totalSprints: row.total_sprints,
+    status: row.status,
+    teacherCode: row.teacher_code,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
+function normalizeTeam(row) {
+  if (!row) {
+    return row;
+  }
+  return {
+    id: row.id,
+    sessionId: row.session_id,
+    name: row.name,
+    teamCode: row.team_code,
+    state: row.state,
+    stateVersion: row.state_version,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  };
+}
+
 export function createSupabaseSyncService(config) {
   requireConfig(config);
   const client = createClient(config.url, config.anonKey);
@@ -28,7 +59,7 @@ export function createSupabaseSyncService(config) {
         .single();
 
       if (error) throw error;
-      return data;
+      return normalizeSession(data);
     },
 
     async createTeam({ sessionId, name, initialState = null }) {
@@ -45,7 +76,7 @@ export function createSupabaseSyncService(config) {
         .single();
 
       if (error) throw error;
-      return data;
+      return normalizeTeam(data);
     },
 
     async getTeam(teamId) {
@@ -56,7 +87,7 @@ export function createSupabaseSyncService(config) {
         .single();
 
       if (error) throw error;
-      return data;
+      return normalizeTeam(data);
     },
 
     async saveTeamState({ teamId, expectedVersion, state }) {
@@ -76,7 +107,7 @@ export function createSupabaseSyncService(config) {
       if (!data) {
         throw new Error("Team state changed; refresh before saving");
       }
-      return data;
+      return normalizeTeam(data);
     },
 
     subscribeToTeam(teamId, onChange) {
@@ -85,7 +116,7 @@ export function createSupabaseSyncService(config) {
         .on(
           "postgres_changes",
           { event: "UPDATE", schema: "public", table: "teams", filter: `id=eq.${teamId}` },
-          (payload) => onChange(payload.new)
+          (payload) => onChange(normalizeTeam(payload.new))
         )
         .subscribe();
 

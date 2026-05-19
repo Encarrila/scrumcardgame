@@ -61,6 +61,22 @@ function renderSaveError(root) {
     `;
 }
 
+function renderLoadingTeam(root) {
+    root.innerHTML = `
+        <main class="remote-page">
+            <header class="remote-header">
+                <div>
+                    <h1>Sala de equipo</h1>
+                    <p>Cargando sala de equipo</p>
+                </div>
+            </header>
+            <section class="remote-panel">
+                <p>Estamos preparando la sala.</p>
+            </section>
+        </main>
+    `;
+}
+
 function renderMissingTeam(root) {
     root.innerHTML = `
         <main class="remote-page">
@@ -89,13 +105,15 @@ function loadTeam(sync, teamId) {
     return sync.getTeam(teamId);
 }
 
-export function createTeamApp(root, { sync = createLocalSyncService() } = {}) {
+export async function createTeamApp(root, { sync = createLocalSyncService() } = {}) {
     const params = new URLSearchParams(window.location.search);
     const teamId = params.get("team");
     let team;
 
+    renderLoadingTeam(root);
+
     try {
-        team = loadTeam(sync, teamId);
+        team = await loadTeam(sync, teamId);
     } catch (error) {
         if (isStorageParseError(error)) {
             renderLocalStorageError(root);
@@ -124,10 +142,10 @@ export function createTeamApp(root, { sync = createLocalSyncService() } = {}) {
 
     renderTeam(root, team);
 
-    root.querySelector("#join-team").addEventListener("click", () => {
+    root.querySelector("#join-team").addEventListener("click", async () => {
         let currentTeam;
         try {
-            currentTeam = loadTeam(sync, teamId);
+            currentTeam = await loadTeam(sync, teamId);
         } catch {
             renderSaveError(root);
             return;
@@ -144,7 +162,7 @@ export function createTeamApp(root, { sync = createLocalSyncService() } = {}) {
                 expectedVersion: currentTeam.stateVersion,
                 state: nextState
             });
-            renderTeam(root, saved);
+            renderTeam(root, await saved);
         } catch {
             renderSaveError(root);
         }

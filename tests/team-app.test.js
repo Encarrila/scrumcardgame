@@ -36,7 +36,7 @@ function createRoot() {
             }
           },
           click() {
-            this.clickHandler?.();
+            return this.clickHandler?.();
           }
         });
       }
@@ -92,11 +92,11 @@ describe("team app shell", () => {
     });
   });
 
-  test("escapes stored team and participant names before rendering", () => {
+  test("escapes stored team and participant names before rendering", async () => {
     seedTeam(storage, teamFixture());
     const root = createRoot();
 
-    createTeamApp(root);
+    await createTeamApp(root);
 
     const html = root.querySelector("#team-output").innerHTML;
     expect(html).toContain("Equipo &lt;script&gt;");
@@ -106,7 +106,7 @@ describe("team app shell", () => {
     expect(html).not.toContain("Ana <img>");
   });
 
-  test("loads team data through the injected sync boundary", () => {
+  test("loads team data through the injected sync boundary", async () => {
     const root = createRoot();
     const sync = {
       getTeam(teamId) {
@@ -118,25 +118,62 @@ describe("team app shell", () => {
       }
     };
 
-    createTeamApp(root, { sync });
+    await createTeamApp(root, { sync });
 
     expect(root.querySelector("#team-output").innerHTML).toContain("Equipo sync");
     expect(storage.getItem(DB_KEY)).toBe(null);
   });
 
-  test("renders a readable error when local storage is corrupt", () => {
+  test("loads team data from an async sync provider", async () => {
+    const root = createRoot();
+    const sync = {
+      async getTeam(teamId) {
+        expect(teamId).toBe("team-1");
+        return teamFixture({ name: "Equipo async" });
+      },
+      async saveTeamState() {
+        throw new Error("not used");
+      }
+    };
+
+    const loading = createTeamApp(root, { sync });
+
+    expect(root.innerHTML).toContain("Cargando sala de equipo");
+
+    await loading;
+
+    expect(root.querySelector("#team-output").innerHTML).toContain("Equipo async");
+  });
+
+  test("renders a readable error when async team loading fails", async () => {
+    const root = createRoot();
+    const sync = {
+      async getTeam() {
+        throw new Error("network unavailable");
+      },
+      async saveTeamState() {
+        throw new Error("not used");
+      }
+    };
+
+    await createTeamApp(root, { sync });
+
+    expect(root.innerHTML).toContain("No se encontro el equipo solicitado");
+  });
+
+  test("renders a readable error when local storage is corrupt", async () => {
     storage.setItem(DB_KEY, "{bad json");
     const root = createRoot();
 
-    createTeamApp(root);
+    await createTeamApp(root);
 
     expect(root.innerHTML).toContain("No se pudo leer la sala local");
   });
 
-  test("renders a retry message when saving fails because the team changed", () => {
+  test("renders a retry message when saving fails because the team changed", async () => {
     seedTeam(storage, teamFixture());
     const root = createRoot();
-    createTeamApp(root);
+    await createTeamApp(root);
     const staleDb = JSON.stringify({ sessions: [], teams: [teamFixture()] });
     const changedDb = JSON.stringify({
       sessions: [],
@@ -152,7 +189,26 @@ describe("team app shell", () => {
     };
 
     root.querySelector("#participant-name").value = "Marta";
-    root.querySelector("#join-team").click();
+    await root.querySelector("#join-team").click();
+
+    expect(root.querySelector("#team-output").innerHTML).toContain("actualiza la sala e intenta nuevamente");
+  });
+
+  test("renders a retry message when async saving fails because the team changed", async () => {
+    const root = createRoot();
+    const sync = {
+      async getTeam() {
+        return teamFixture();
+      },
+      async saveTeamState() {
+        throw new Error("Team state changed; refresh before saving");
+      }
+    };
+
+    await createTeamApp(root, { sync });
+
+    root.querySelector("#participant-name").value = "Marta";
+    await root.querySelector("#join-team").click();
 
     expect(root.querySelector("#team-output").innerHTML).toContain("actualiza la sala e intenta nuevamente");
   });
