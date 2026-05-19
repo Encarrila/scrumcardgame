@@ -1,7 +1,6 @@
 import { joinParticipant } from "./game-engine.js";
 import { createLocalSyncService } from "./sync/local-sync-service.js";
 
-const DB_KEY = "scrum-card-game-db";
 const PARTICIPANT_KEY = "scrum-card-game-participant-id";
 
 function escapeHtml(value) {
@@ -13,23 +12,6 @@ function escapeHtml(value) {
         .replaceAll("'", "&#39;");
 }
 
-function readLocalDb() {
-    const stored = window.localStorage.getItem(DB_KEY);
-    if (!stored) {
-        return null;
-    }
-
-    try {
-        return JSON.parse(stored);
-    } catch {
-        return null;
-    }
-}
-
-function hasStoredDb() {
-    return window.localStorage.getItem(DB_KEY) !== null;
-}
-
 function participantToken() {
     const existing = window.localStorage.getItem(PARTICIPANT_KEY);
     if (existing) {
@@ -39,19 +21,6 @@ function participantToken() {
     const created = crypto.randomUUID();
     window.localStorage.setItem(PARTICIPANT_KEY, created);
     return created;
-}
-
-function findTeam(teamId) {
-    if (!teamId) {
-        return null;
-    }
-
-    const db = readLocalDb();
-    if (!db?.teams) {
-        return null;
-    }
-
-    return db.teams.find((candidate) => candidate.id === teamId) ?? null;
 }
 
 function renderTeam(root, team) {
@@ -109,18 +78,30 @@ function renderMissingTeam(root) {
     `;
 }
 
-export function createTeamApp(root) {
+function isStorageParseError(error) {
+    return error instanceof SyntaxError;
+}
+
+function loadTeam(sync, teamId) {
+    if (!teamId) {
+        throw new Error("Team id is required");
+    }
+    return sync.getTeam(teamId);
+}
+
+export function createTeamApp(root, { sync = createLocalSyncService() } = {}) {
     const params = new URLSearchParams(window.location.search);
     const teamId = params.get("team");
-    const sync = createLocalSyncService();
+    let team;
 
-    if (hasStoredDb() && !readLocalDb()) {
-        renderLocalStorageError(root);
-        return;
-    }
-
-    if (!findTeam(teamId)) {
-        renderMissingTeam(root);
+    try {
+        team = loadTeam(sync, teamId);
+    } catch (error) {
+        if (isStorageParseError(error)) {
+            renderLocalStorageError(root);
+        } else {
+            renderMissingTeam(root);
+        }
         return;
     }
 
@@ -141,24 +122,26 @@ export function createTeamApp(root) {
         </main>
     `;
 
-    renderTeam(root, findTeam(teamId));
+    renderTeam(root, team);
 
     root.querySelector("#join-team").addEventListener("click", () => {
-        const team = findTeam(teamId);
-        if (!team?.state?.participants) {
-            renderMissingTeam(root);
+        let currentTeam;
+        try {
+            currentTeam = loadTeam(sync, teamId);
+        } catch {
+            renderSaveError(root);
             return;
         }
 
         const participantId = participantToken();
-        const nextState = joinParticipant(team.state, {
+        const nextState = joinParticipant(currentTeam.state, {
             participantId,
             displayName: root.querySelector("#participant-name").value || "Participante"
         });
         try {
             const saved = sync.saveTeamState({
                 teamId,
-                expectedVersion: team.stateVersion,
+                expectedVersion: currentTeam.stateVersion,
                 state: nextState
             });
             renderTeam(root, saved);

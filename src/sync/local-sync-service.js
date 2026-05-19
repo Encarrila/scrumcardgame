@@ -62,6 +62,15 @@ export function createLocalSyncService({ storage = defaultStorage() } = {}) {
       };
     },
 
+    getTeam(teamId) {
+      const db = readDb(storage);
+      const team = db.teams.find((candidate) => candidate.id === teamId);
+      if (!team) {
+        throw new Error(`Team ${teamId} was not found`);
+      }
+      return team;
+    },
+
     createTeam({ sessionId, name, initialState = null }) {
       const db = readDb(storage);
       const session = db.sessions.find((candidate) => candidate.id === sessionId);

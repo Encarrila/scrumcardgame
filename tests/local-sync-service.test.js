@@ -46,6 +46,20 @@ describe("local sync service", () => {
     expect(sync.getSession(session.id).teams).toHaveLength(1);
   });
 
+  test("returns a team by id", () => {
+    const sync = createLocalSyncService({ storage });
+    const session = sync.createSession({ name: "Clase UDESA", totalSprints: 2 });
+    const team = sync.createTeam({ sessionId: session.id, name: "Equipo 1" });
+
+    expect(sync.getTeam(team.id)).toEqual(team);
+  });
+
+  test("throws a readable error when a team is missing", () => {
+    const sync = createLocalSyncService({ storage });
+
+    expect(() => sync.getTeam("team-missing")).toThrow("Team team-missing was not found");
+  });
+
   test("rejects stale team state updates", () => {
     const sync = createLocalSyncService({ storage });
     const session = sync.createSession({ name: "Clase UDESA", totalSprints: 2 });

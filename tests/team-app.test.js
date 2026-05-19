@@ -106,6 +106,24 @@ describe("team app shell", () => {
     expect(html).not.toContain("Ana <img>");
   });
 
+  test("loads team data through the injected sync boundary", () => {
+    const root = createRoot();
+    const sync = {
+      getTeam(teamId) {
+        expect(teamId).toBe("team-1");
+        return teamFixture({ name: "Equipo sync" });
+      },
+      saveTeamState() {
+        throw new Error("not used");
+      }
+    };
+
+    createTeamApp(root, { sync });
+
+    expect(root.querySelector("#team-output").innerHTML).toContain("Equipo sync");
+    expect(storage.getItem(DB_KEY)).toBe(null);
+  });
+
   test("renders a readable error when local storage is corrupt", () => {
     storage.setItem(DB_KEY, "{bad json");
     const root = createRoot();

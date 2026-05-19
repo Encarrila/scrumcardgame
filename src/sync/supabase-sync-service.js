@@ -48,6 +48,17 @@ export function createSupabaseSyncService(config) {
       return data;
     },
 
+    async getTeam(teamId) {
+      const { data, error } = await client
+        .from("teams")
+        .select()
+        .eq("id", teamId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+
     async saveTeamState({ teamId, expectedVersion, state }) {
       const { data, error } = await client
         .from("teams")
