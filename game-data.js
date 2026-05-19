@@ -73,7 +73,7 @@ const EVENTOS = [
         name: "Celebracion de Aniversario",
         effect: "Resta 2 puntos del resultado de todo mundo",
         type: "negative",
-        action: "REDUCE_ALL_DICE",
+        action: "REDUCE_NEXT_TEAM_ROLL",
         value: 2
     },
     {
