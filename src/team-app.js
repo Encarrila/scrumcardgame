@@ -4,6 +4,32 @@ import { createLocalSyncService } from "./sync/local-sync-service.js";
 const DB_KEY = "scrum-card-game-db";
 const PARTICIPANT_KEY = "scrum-card-game-participant-id";
 
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
+function readLocalDb() {
+    const stored = window.localStorage.getItem(DB_KEY);
+    if (!stored) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(stored);
+    } catch {
+        return null;
+    }
+}
+
+function hasStoredDb() {
+    return window.localStorage.getItem(DB_KEY) !== null;
+}
+
 function participantToken() {
     const existing = window.localStorage.getItem(PARTICIPANT_KEY);
     if (existing) {
@@ -20,7 +46,11 @@ function findTeam(teamId) {
         return null;
     }
 
-    const db = JSON.parse(window.localStorage.getItem(DB_KEY) ?? '{"teams":[]}');
+    const db = readLocalDb();
+    if (!db?.teams) {
+        return null;
+    }
+
     return db.teams.find((candidate) => candidate.id === teamId) ?? null;
 }
 
@@ -32,9 +62,33 @@ function renderTeam(root, team) {
 
     const active = team.state.participants.find((participant) => participant.id === team.state.activeParticipantId);
     root.querySelector("#team-output").innerHTML = `
-        <h2>${team.name}</h2>
-        <p>Participantes: ${team.state.participants.map((participant) => participant.displayName).join(", ") || "Sin participantes"}</p>
-        <p>Turno activo: <strong>${active?.displayName ?? "Sin participante activo"}</strong></p>
+        <h2>${escapeHtml(team.name)}</h2>
+        <p>Participantes: ${team.state.participants.map((participant) => escapeHtml(participant.displayName)).join(", ") || "Sin participantes"}</p>
+        <p>Turno activo: <strong>${escapeHtml(active?.displayName ?? "Sin participante activo")}</strong></p>
+    `;
+}
+
+function renderLocalStorageError(root) {
+    root.innerHTML = `
+        <main class="remote-page">
+            <header class="remote-header">
+                <div>
+                    <h1>Sala de equipo</h1>
+                    <p>No se pudo leer la sala local</p>
+                </div>
+            </header>
+            <section class="remote-panel">
+                <p>Los datos guardados en este navegador no se pudieron interpretar. Actualiza la pagina o vuelve a abrir la sala desde el panel docente.</p>
+                <a href="?mode=teacher">Abrir panel docente</a>
+            </section>
+        </main>
+    `;
+}
+
+function renderSaveError(root) {
+    root.querySelector("#team-output").innerHTML = `
+        <h2>No se pudo guardar tu ingreso</h2>
+        <p>La sala cambio o ya no esta disponible; actualiza la sala e intenta nuevamente.</p>
     `;
 }
 
@@ -59,6 +113,11 @@ export function createTeamApp(root) {
     const params = new URLSearchParams(window.location.search);
     const teamId = params.get("team");
     const sync = createLocalSyncService();
+
+    if (hasStoredDb() && !readLocalDb()) {
+        renderLocalStorageError(root);
+        return;
+    }
 
     if (!findTeam(teamId)) {
         renderMissingTeam(root);
@@ -96,12 +155,15 @@ export function createTeamApp(root) {
             participantId,
             displayName: root.querySelector("#participant-name").value || "Participante"
         });
-        const saved = sync.saveTeamState({
-            teamId,
-            expectedVersion: team.stateVersion,
-            state: nextState
-        });
-
-        renderTeam(root, saved);
+        try {
+            const saved = sync.saveTeamState({
+                teamId,
+                expectedVersion: team.stateVersion,
+                state: nextState
+            });
+            renderTeam(root, saved);
+        } catch {
+            renderSaveError(root);
+        }
     });
 }
