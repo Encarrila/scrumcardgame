@@ -25,7 +25,7 @@ export function createSupabaseSyncService(config) {
           teacher_code: randomCode("T")
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
