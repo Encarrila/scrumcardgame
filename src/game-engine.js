@@ -23,6 +23,10 @@ function createTurnActions() {
 }
 
 function assertCanAct(state, participantId) {
+    if (state.gameStatus === "finished") {
+        throw new Error("Game is finished");
+    }
+
     if (state.sessionPaused) {
         throw new Error("Session is paused");
     }
@@ -113,6 +117,12 @@ function createSprintSummary(state) {
     };
 }
 
+function clearSprintCommitments(next) {
+    for (const story of next.backlog) {
+        story.inSprint = false;
+    }
+}
+
 function assertTurnComplete(state) {
     const { selected, diceRolled, hoursDeducted, cardDrawn } = state.turnActions;
     if (!selected || !diceRolled || !hoursDeducted || !cardDrawn) {
@@ -126,6 +136,7 @@ export function createInitialTeamState({ teamName, totalSprints, catalog }) {
         totalSprints,
         currentSprint: 1,
         currentDay: 1,
+        gameStatus: "in_progress",
         sessionPaused: false,
         participants: [],
         activeParticipantId: null,
@@ -335,8 +346,15 @@ export function endTurn(state, { participantId }) {
         next.currentDay += 1;
         if (next.currentDay > 3) {
             next.sprintHistory.push(createSprintSummary(next));
-            next.currentSprint += 1;
-            next.currentDay = 1;
+            clearSprintCommitments(next);
+
+            if (next.currentSprint >= next.totalSprints) {
+                next.gameStatus = "finished";
+                next.currentDay = 3;
+            } else {
+                next.currentSprint += 1;
+                next.currentDay = 1;
+            }
         }
     }
 

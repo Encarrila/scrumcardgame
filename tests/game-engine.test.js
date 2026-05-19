@@ -37,6 +37,18 @@ function completeTurn(state, catalog, storyId = 2) {
   });
 }
 
+function playTurn(state, catalog, storyId) {
+  state = completeTurn(state, catalog, storyId);
+  return endTurn(state, { participantId: state.activeParticipantId });
+}
+
+function finishSprint(state, catalog, storyId, sprint = state.currentSprint) {
+  while (state.currentSprint === sprint && state.gameStatus !== "finished") {
+    state = playTurn(state, catalog, storyId);
+  }
+  return state;
+}
+
 describe("game-engine rules", () => {
   test("rejects ending a turn before required actions are complete", () => {
     const { state } = readyState();
@@ -179,6 +191,36 @@ describe("game-engine rules", () => {
       doneStoryIds: [1],
       points: 18
     });
+  });
+
+  test("isolates committed stories by sprint in sprint summaries", () => {
+    let { state, catalog } = readyState();
+    state = completeStory(state, catalog, 1);
+    state = endTurn(state, { participantId: "p1" });
+    state = finishSprint(state, catalog, 3, 1);
+
+    state = finishSprint(state, catalog, 2, 2);
+
+    expect(state.sprintHistory).toHaveLength(2);
+    expect(state.sprintHistory[1]).toMatchObject({
+      sprint: 2,
+      committedStoryIds: [2],
+      doneStoryIds: [],
+      points: 0
+    });
+    expect(state.sprintHistory[1].committedStoryIds).not.toContain(1);
+  });
+
+  test("finishes the game without advancing past the configured final sprint", () => {
+    let { state, catalog } = readyState();
+    state.totalSprints = 1;
+
+    state = finishSprint(state, catalog, 2);
+
+    expect(state.sprintHistory).toHaveLength(1);
+    expect(state.sprintHistory[0].sprint).toBe(1);
+    expect(state.currentSprint).toBe(1);
+    expect(state.gameStatus).toBe("finished");
   });
 
   test("removes completed counts when a DONE story receives added hours", () => {
