@@ -23,9 +23,9 @@ const EVENTOS = [
     {
         id: 1,
         name: "Apoyo de la Direccion",
-        effect: "Adiciona 4 puntos a la ultima tirada",
+        effect: "Adiciona 4 puntos a la proxima tirada del equipo",
         type: "positive",
-        action: "ADD_DICE",
+        action: "ADD_NEXT_TEAM_ROLL",
         value: 4
     },
     {
