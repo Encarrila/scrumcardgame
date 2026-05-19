@@ -212,6 +212,11 @@ function rollDice() {
         return;
     }
 
+    if (gameState.selectedStory.remainingHours <= 0) {
+        alert('Esta historia ya tiene 0 horas restantes. Debes elegir otra historia o aplicar una solucion si esta bloqueada.');
+        return;
+    }
+
     const die1 = document.getElementById('die1');
     const die2 = document.getElementById('die2');
 
@@ -797,6 +802,21 @@ function restartGame() {
 }
 
 function showRules() {
+    const rulesContent = document.querySelector('#rules-modal .rules-content');
+    if (rulesContent && !document.getElementById('event-card-reference')) {
+        const eventReference = document.createElement('section');
+        eventReference.id = 'event-card-reference';
+        eventReference.innerHTML = `
+            <h3>Referencia de Eventos</h3>
+            <ul>
+                ${EVENTOS.map(evento => `
+                    <li><strong>${evento.name}:</strong> ${evento.effect}</li>
+                `).join('')}
+            </ul>
+        `;
+        rulesContent.appendChild(eventReference);
+    }
+
     document.getElementById('rules-modal').classList.add('active');
 }
 
