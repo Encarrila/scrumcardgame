@@ -90,6 +90,21 @@ export function createSupabaseSyncService(config) {
       return normalizeTeam(data);
     },
 
+    async setSessionStatus({ sessionId, status }) {
+      const { data, error } = await client
+        .from("game_sessions")
+        .update({
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", sessionId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return normalizeSession(data);
+    },
+
     async saveTeamState({ teamId, expectedVersion, state }) {
       const { data, error } = await client
         .from("teams")

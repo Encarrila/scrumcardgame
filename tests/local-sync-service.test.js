@@ -71,4 +71,14 @@ describe("local sync service", () => {
       sync.saveTeamState({ teamId: team.id, expectedVersion: 0, state: { currentDay: 2 } })
     ).toThrow("Team state changed; refresh before saving");
   });
+
+  test("updates session status for teacher controls", () => {
+    const sync = createLocalSyncService({ storage });
+    const session = sync.createSession({ name: "Clase UDESA", totalSprints: 2 });
+
+    const paused = sync.setSessionStatus({ sessionId: session.id, status: "paused" });
+
+    expect(paused.status).toBe("paused");
+    expect(sync.getSession(session.id).status).toBe("paused");
+  });
 });

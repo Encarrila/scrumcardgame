@@ -71,6 +71,21 @@ export function createLocalSyncService({ storage = defaultStorage() } = {}) {
       return team;
     },
 
+    setSessionStatus({ sessionId, status }) {
+      const db = readDb(storage);
+      const session = db.sessions.find((candidate) => candidate.id === sessionId);
+      if (!session) {
+        throw new Error(`Session ${sessionId} was not found`);
+      }
+      session.status = status;
+      session.updatedAt = new Date().toISOString();
+      writeDb(storage, db);
+      return {
+        ...session,
+        teams: db.teams.filter((team) => team.sessionId === sessionId)
+      };
+    },
+
     createTeam({ sessionId, name, initialState = null }) {
       const db = readDb(storage);
       const session = db.sessions.find((candidate) => candidate.id === sessionId);
