@@ -105,6 +105,14 @@ function markCardDrawn(next, card) {
     }
 }
 
+function createPendingCard(card) {
+    return {
+        ...clone(card),
+        pendingCardId: crypto.randomUUID(),
+        implemented: false
+    };
+}
+
 function createSprintSummary(state) {
     const committedStories = state.backlog.filter((story) => story.inSprint);
     const doneStories = committedStories.filter((story) => story.status === "done");
@@ -143,6 +151,7 @@ export function createInitialTeamState({ teamName, totalSprints, catalog }) {
         backlog: createBacklog(catalog.stories),
         opportunityDeck: [],
         discardPile: [],
+        pendingCards: [],
         selectedStoryId: null,
         diceResult: null,
         pendingTeamRollBonus: 0,
@@ -246,10 +255,14 @@ export function applyCardToState(state, { participantId, card, targetStoryId }) 
 
     const next = clone(state);
     const storedCard = clone(card);
+    applyCardEffect(next, storedCard, targetStoryId);
+    markCardDrawn(next, storedCard);
+    return next;
+}
 
+function applyCardEffect(next, storedCard, targetStoryId) {
     if (storedCard.cardType === "evento") {
         applyEventCard(next, storedCard, targetStoryId);
-        markCardDrawn(next, storedCard);
         return next;
     }
 
@@ -257,7 +270,6 @@ export function applyCardToState(state, { participantId, card, targetStoryId }) 
         const story = findStory(next, targetStoryId ?? next.selectedStoryId);
         story.problems.push(storedCard);
         reopenStory(next, story);
-        markCardDrawn(next, storedCard);
         return next;
     }
 
@@ -273,18 +285,60 @@ export function applyCardToState(state, { participantId, card, targetStoryId }) 
                 const [problem] = story.problems.splice(problemIndex, 1);
                 next.discardPile.push(clone(problem), storedCard);
                 checkStoryCompletion(next, story);
-                markCardDrawn(next, storedCard);
                 return next;
             }
         }
 
         next.solutions.push(storedCard);
-        markCardDrawn(next, storedCard);
         return next;
     }
 
     next.discardPile.push(storedCard);
-    markCardDrawn(next, storedCard);
+    return next;
+}
+
+export function drawOpportunityCardForTurn(state, { participantId, shuffle = (items) => [...items] }) {
+    assertCanAct(state, participantId);
+    if (state.turnActions.cardDrawn) {
+        throw new Error("Card was already drawn this turn");
+    }
+
+    const next = clone(state);
+    next.pendingCards = next.pendingCards ?? [];
+    next.opportunityDeck = next.opportunityDeck ?? [];
+    next.discardPile = next.discardPile ?? [];
+
+    if (next.opportunityDeck.length === 0 && next.discardPile.length > 0) {
+        next.opportunityDeck = shuffle(next.discardPile);
+        next.discardPile = [];
+    }
+
+    if (next.opportunityDeck.length === 0) {
+        next.turnActions.cardDrawn = true;
+        return next;
+    }
+
+    const [card, ...remainingDeck] = next.opportunityDeck;
+    next.opportunityDeck = remainingDeck;
+    next.pendingCards.push(createPendingCard(card));
+    next.turnActions.cardDrawn = true;
+    return next;
+}
+
+export function applyPendingCard(state, { participantId, pendingCardId, targetStoryId }) {
+    assertCanAct(state, participantId);
+
+    const next = clone(state);
+    next.pendingCards = next.pendingCards ?? [];
+    const pendingIndex = next.pendingCards.findIndex((card) => card.pendingCardId === pendingCardId);
+
+    if (pendingIndex === -1) {
+        throw new Error("Pending card was not found");
+    }
+
+    const [pendingCard] = next.pendingCards.splice(pendingIndex, 1);
+    const { pendingCardId: _pendingCardId, implemented: _implemented, ...card } = pendingCard;
+    applyCardEffect(next, card, targetStoryId);
     return next;
 }
 

@@ -212,4 +212,44 @@ describe("team app shell", () => {
 
     expect(root.querySelector("#team-output").innerHTML).toContain("actualiza la sala e intenta nuevamente");
   });
+
+  test("renders drawn but not yet implemented opportunity cards", async () => {
+    const root = createRoot();
+    const sync = {
+      async getTeam() {
+        return teamFixture({
+          name: "Equipo cartas",
+          state: {
+            participants: [{ id: "p1", displayName: "Ana", turnOrder: 0 }],
+            activeParticipantId: "p1",
+            backlog: [],
+            opportunityDeck: [],
+            discardPile: [],
+            solutions: [],
+            pendingCards: [
+              {
+                pendingCardId: "pending-1",
+                id: 1,
+                cardType: "evento",
+                name: "Apoyo de la Direccion",
+                effect: "Adiciona 4 puntos a la proxima tirada del equipo",
+                implemented: false
+              }
+            ],
+            turnActions: { selected: false, diceRolled: false, hoursDeducted: false, cardDrawn: false }
+          }
+        });
+      },
+      async saveTeamState() {
+        throw new Error("not used");
+      }
+    };
+
+    await createTeamApp(root, { sync });
+
+    const html = root.querySelector("#team-output").innerHTML;
+    expect(html).toContain("Cartas pendientes");
+    expect(html).toContain("Apoyo de la Direccion");
+    expect(html).toContain("Aplicar");
+  });
 });

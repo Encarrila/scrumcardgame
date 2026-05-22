@@ -974,6 +974,47 @@ body {
     margin: 0.35rem 0;
 }
 
+.pending-cards {
+    background: #fffdf5;
+    border-color: #f3d58a;
+}
+
+.pending-cards h3 {
+    margin-top: 0;
+}
+
+.pending-card {
+    align-items: flex-start;
+    background: #ffffff;
+    border: 1px solid #f3d58a;
+    border-radius: 8px;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    margin-top: 0.65rem;
+    padding: 0.75rem;
+}
+
+.pending-card strong,
+.pending-card span,
+.pending-card p {
+    display: block;
+}
+
+.pending-card span {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+}
+
+.pending-card p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.35;
+    margin-top: 0.35rem;
+}
+
 .remote-reference {
     background: #ffffff;
     border: 1px solid var(--border-color);
@@ -1034,5 +1075,9 @@ body {
 
     .team-status {
         justify-content: flex-start;
+    }
+
+    .pending-card {
+        flex-direction: column;
     }
 }

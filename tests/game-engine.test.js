@@ -2,8 +2,10 @@ import { describe, expect, test } from "vitest";
 import {
   applyCardToState,
   createInitialTeamState,
+  drawOpportunityCardForTurn,
   endTurn,
   joinParticipant,
+  applyPendingCard,
   rollDiceForSelectedStory,
   selectStoryForTurn,
   setSessionPaused
@@ -343,6 +345,36 @@ describe("game-engine rules", () => {
     });
 
     expect(state.pendingTeamRollBonus).toBe(4);
+  });
+
+  test("draws opportunity cards into a pending pile without applying them immediately", () => {
+    let { state, catalog } = readyState();
+    const card = { ...catalog.events[0], cardType: "evento" };
+    state.opportunityDeck = [card];
+    state = selectStoryForTurn(state, { participantId: "p1", storyId: 1 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
+
+    state = drawOpportunityCardForTurn(state, { participantId: "p1" });
+
+    expect(state.opportunityDeck).toHaveLength(0);
+    expect(state.pendingCards).toMatchObject([{ name: card.name, implemented: false }]);
+    expect(state.pendingTeamRollBonus).toBe(0);
+    expect(state.turnActions.cardDrawn).toBe(true);
+  });
+
+  test("applies a pending card and removes it from the pending pile", () => {
+    let { state, catalog } = readyState();
+    const card = { ...catalog.events[0], cardType: "evento" };
+    state.opportunityDeck = [card];
+    state = selectStoryForTurn(state, { participantId: "p1", storyId: 1 });
+    state = rollDiceForSelectedStory(state, { participantId: "p1", dice: [1, 1] });
+    state = drawOpportunityCardForTurn(state, { participantId: "p1" });
+
+    state = applyPendingCard(state, { participantId: "p1", pendingCardId: state.pendingCards[0].pendingCardId });
+
+    expect(state.pendingCards).toHaveLength(0);
+    expect(state.pendingTeamRollBonus).toBe(4);
+    expect(state.discardPile.at(-1).name).toBe(card.name);
   });
 
   test("clones stored card payloads so caller mutations do not affect state", () => {

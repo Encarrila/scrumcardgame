@@ -1,5 +1,6 @@
 import {
-    applyCardToState,
+    applyPendingCard,
+    drawOpportunityCardForTurn,
     endTurn,
     joinParticipant,
     rollDiceForSelectedStory,
@@ -68,6 +69,24 @@ function renderReferenceCards() {
     `;
 }
 
+function renderPendingCards(pendingCards, isActive) {
+    return `
+        <section class="remote-panel compact pending-cards">
+            <h3>Cartas pendientes</h3>
+            ${pendingCards.map((card) => `
+                <article class="pending-card">
+                    <div>
+                        <strong>${escapeHtml(card.name)}</strong>
+                        <span>${escapeHtml(card.cardType)}</span>
+                        <p>${escapeHtml(card.effect)}</p>
+                    </div>
+                    <button class="btn-secondary" data-action="apply-pending-card" data-pending-card-id="${escapeHtml(card.pendingCardId)}" ${isActive ? "" : "disabled"}>Aplicar</button>
+                </article>
+            `).join("") || `<p class="empty-message">Sin cartas pendientes</p>`}
+        </section>
+    `;
+}
+
 function renderTeam(root, team) {
     if (!team?.state?.participants) {
         renderMissingTeam(root);
@@ -78,6 +97,7 @@ function renderTeam(root, team) {
     const solutions = team.state.solutions ?? [];
     const opportunityDeck = team.state.opportunityDeck ?? [];
     const discardPile = team.state.discardPile ?? [];
+    const pendingCards = team.state.pendingCards ?? [];
     const currentParticipantId = window.localStorage.getItem(PARTICIPANT_KEY);
     const isActive = currentParticipantId === team.state.activeParticipantId;
     const active = team.state.participants.find((participant) => participant.id === team.state.activeParticipantId);
@@ -103,7 +123,7 @@ function renderTeam(root, team) {
         <div class="team-action-panel">
             <p>Historia seleccionada: <strong>${selectedStory ? `#${selectedStory.id} (${selectedStory.remainingHours}h)` : "Ninguna"}</strong></p>
             <p>Dados: <strong>${team.state.diceResult ?? "-"}</strong> | Bonus proxima tirada: <strong>${team.state.pendingTeamRollBonus ?? 0}</strong></p>
-            <p>Mazo: ${opportunityDeck.length} | Descarte: ${discardPile.length} | Soluciones: ${solutions.length}</p>
+            <p>Mazo: ${opportunityDeck.length} | Pendientes: ${pendingCards.length} | Descarte: ${discardPile.length} | Soluciones: ${solutions.length}</p>
             <div class="team-actions">
                 <button class="btn-secondary" data-action="roll-dice" ${isActive && team.state.turnActions.selected && !team.state.turnActions.diceRolled ? "" : "disabled"}>Tirar dados</button>
                 <button class="btn-secondary" data-action="draw-card" ${isActive && team.state.turnActions.diceRolled && !team.state.turnActions.cardDrawn ? "" : "disabled"}>Tomar oportunidad</button>
@@ -116,6 +136,8 @@ function renderTeam(root, team) {
             ${storyColumn(renderState, "doing", "Doing")}
             ${storyColumn(renderState, "done", "Done")}
         </div>
+
+        ${renderPendingCards(pendingCards, isActive)}
 
         <section class="remote-panel compact">
             <h3>Problemas activos</h3>
@@ -213,25 +235,6 @@ async function saveUpdatedTeam(root, sync, teamId, update) {
     return saved;
 }
 
-function drawCardForParticipant(state, participantId) {
-    const next = structuredClone(state);
-    if (next.opportunityDeck.length === 0 && next.discardPile.length > 0) {
-        next.opportunityDeck = shuffleArray(next.discardPile);
-        next.discardPile = [];
-    }
-    if (next.opportunityDeck.length === 0) {
-        next.turnActions.cardDrawn = true;
-        return next;
-    }
-    const [card, ...remainingDeck] = next.opportunityDeck;
-    next.opportunityDeck = remainingDeck;
-    return applyCardToState(next, {
-        participantId,
-        card,
-        targetStoryId: next.selectedStoryId
-    });
-}
-
 export async function createTeamApp(root, { sync = createLocalSyncService() } = {}) {
     const params = new URLSearchParams(window.location.search);
     const teamId = params.get("team");
@@ -299,7 +302,17 @@ export async function createTeamApp(root, { sync = createLocalSyncService() } = 
                 await saveUpdatedTeam(root, sync, teamId, (state) => rollDiceForSelectedStory(state, { participantId, dice }));
             }
             if (action === "draw-card") {
-                await saveUpdatedTeam(root, sync, teamId, (state) => drawCardForParticipant(state, participantId));
+                await saveUpdatedTeam(root, sync, teamId, (state) => drawOpportunityCardForTurn(state, {
+                    participantId,
+                    shuffle: shuffleArray
+                }));
+            }
+            if (action === "apply-pending-card") {
+                await saveUpdatedTeam(root, sync, teamId, (state) => applyPendingCard(state, {
+                    participantId,
+                    pendingCardId: button.dataset.pendingCardId,
+                    targetStoryId: state.selectedStoryId
+                }));
             }
             if (action === "end-turn") {
                 await saveUpdatedTeam(root, sync, teamId, (state) => endTurn(state, { participantId }));
