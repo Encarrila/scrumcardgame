@@ -1,5 +1,6 @@
 import { createTeacherApp } from "./teacher-app.js";
 import { createTeamApp } from "./team-app.js";
+import { createConfiguredSyncService } from "./sync/sync-factory.js";
 
 function getMode() {
     const params = new URLSearchParams(window.location.search);
@@ -9,6 +10,7 @@ function getMode() {
 document.addEventListener("DOMContentLoaded", () => {
     const mode = getMode();
     const root = document.getElementById("remote-app");
+    const sync = createConfiguredSyncService();
 
     if (!root) {
         return;
@@ -17,12 +19,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mode === "teacher") {
         document.getElementById("app")?.classList.add("hidden");
         root.classList.remove("hidden");
-        createTeacherApp(root);
+        createTeacherApp(root, { sync });
     }
 
     if (mode === "team") {
         document.getElementById("app")?.classList.add("hidden");
         root.classList.remove("hidden");
-        createTeamApp(root);
+        createTeamApp(root, { sync });
     }
 });

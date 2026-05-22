@@ -14,15 +14,16 @@ function normalizeSession(row) {
   if (!row) {
     return row;
   }
-  return {
-    id: row.id,
-    name: row.name,
-    totalSprints: row.total_sprints,
-    status: row.status,
-    teacherCode: row.teacher_code,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at
-  };
+    return {
+        id: row.id,
+        name: row.name,
+        totalSprints: row.total_sprints,
+        status: row.status,
+        catalogVersion: row.catalog_version,
+        teacherCode: row.teacher_code,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+    };
 }
 
 function normalizeTeam(row) {
@@ -77,6 +78,29 @@ export function createSupabaseSyncService(config) {
 
       if (error) throw error;
       return normalizeTeam(data);
+    },
+
+    async getSession(sessionId) {
+      const { data: session, error: sessionError } = await client
+        .from("game_sessions")
+        .select()
+        .eq("id", sessionId)
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      const { data: teams, error: teamsError } = await client
+        .from("teams")
+        .select()
+        .eq("session_id", sessionId)
+        .order("created_at", { ascending: true });
+
+      if (teamsError) throw teamsError;
+
+      return {
+        ...normalizeSession(session),
+        teams: teams.map(normalizeTeam)
+      };
     },
 
     async getTeam(teamId) {

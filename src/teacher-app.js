@@ -1,6 +1,7 @@
 import { createCatalog, createOpportunityDeck } from "./catalog.js";
 import { createInitialTeamState } from "./game-engine.js";
 import { createLocalSyncService } from "./sync/local-sync-service.js";
+import { syncModeLabel } from "./sync/sync-factory.js";
 
 function escapeHtml(value) {
     return String(value)
@@ -37,13 +38,13 @@ function summarizeTeam(team) {
     `;
 }
 
-function renderSession(root, sync, sessionId) {
-    const session = sync.getSession(sessionId);
+async function renderSession(root, sync, sessionId) {
+    const session = await sync.getSession(sessionId);
     root.querySelector("#teacher-output").innerHTML = `
         <section class="remote-panel teacher-session-bar">
             <div>
                 <h2>${escapeHtml(session.name)}</h2>
-                <p>${session.teams.length} equipos | ${session.status}</p>
+                <p>${session.teams.length} equipos | ${session.status} | ${syncModeLabel()}</p>
             </div>
             <div class="teacher-actions">
                 <button id="pause-session" class="btn-secondary">${session.status === "paused" ? "Reanudar" : "Pausar"}</button>
@@ -55,30 +56,30 @@ function renderSession(root, sync, sessionId) {
         </section>
     `;
 
-    root.querySelector("#pause-session").addEventListener("click", () => {
+    root.querySelector("#pause-session").addEventListener("click", async () => {
         const paused = session.status !== "paused";
-        sync.setSessionStatus({ sessionId, status: paused ? "paused" : "active" });
+        await sync.setSessionStatus({ sessionId, status: paused ? "paused" : "active" });
         for (const team of session.teams) {
-            sync.saveTeamState({
+            await sync.saveTeamState({
                 teamId: team.id,
                 expectedVersion: team.stateVersion,
                 state: { ...team.state, sessionPaused: paused }
             });
         }
-        renderSession(root, sync, sessionId);
+        await renderSession(root, sync, sessionId);
     });
 
-    root.querySelector("#reset-session").addEventListener("click", () => {
+    root.querySelector("#reset-session").addEventListener("click", async () => {
         const catalog = createCatalog();
         for (const team of session.teams) {
             const currentState = team.state;
             const resetState = createTeamState(team.name, session.totalSprints, catalog);
             resetState.participants = currentState.participants;
             resetState.activeParticipantId = currentState.participants[0]?.id ?? null;
-            sync.saveTeamState({ teamId: team.id, expectedVersion: team.stateVersion, state: resetState });
+            await sync.saveTeamState({ teamId: team.id, expectedVersion: team.stateVersion, state: resetState });
         }
-        sync.setSessionStatus({ sessionId, status: "active" });
-        renderSession(root, sync, sessionId);
+        await sync.setSessionStatus({ sessionId, status: "active" });
+        await renderSession(root, sync, sessionId);
     });
 }
 
@@ -98,37 +99,35 @@ export function createTeacherApp(root, { sync = createLocalSyncService() } = {})
                 <input id="session-name" class="text-input" value="Clase Scrum Card Game">
                 <label for="session-sprints">Cantidad de sprints</label>
                 <input id="session-sprints" class="text-input" type="number" min="1" max="5" value="2">
-                <button id="create-session" class="btn-primary">Crear sesion local</button>
+                <button id="create-session" class="btn-primary">Crear sesion</button>
             </section>
             <section id="teacher-output"></section>
         </main>
     `;
 
     if (currentSessionId) {
-        try {
-            renderSession(root, sync, currentSessionId);
-        } catch {
+        renderSession(root, sync, currentSessionId).catch(() => {
             window.localStorage.removeItem("scrum-card-game-last-session");
             currentSessionId = null;
-        }
+        });
     }
 
-    root.querySelector("#create-session").addEventListener("click", () => {
-        const session = sync.createSession({
+    root.querySelector("#create-session").addEventListener("click", async () => {
+        const session = await sync.createSession({
             name: root.querySelector("#session-name").value,
             totalSprints: Number(root.querySelector("#session-sprints").value)
         });
         const catalog = createCatalog();
-        ["Equipo 1", "Equipo 2", "Equipo 3"].forEach((name) =>
-            sync.createTeam({
+        for (const name of ["Equipo 1", "Equipo 2", "Equipo 3"]) {
+            await sync.createTeam({
                 sessionId: session.id,
                 name,
                 initialState: createTeamState(name, session.totalSprints, catalog)
-            })
-        );
+            });
+        }
 
         currentSessionId = session.id;
         window.localStorage.setItem("scrum-card-game-last-session", session.id);
-        renderSession(root, sync, currentSessionId);
+        await renderSession(root, sync, currentSessionId);
     });
 }

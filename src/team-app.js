@@ -41,7 +41,7 @@ function storyColumn(state, status, title) {
             <h3>${title} <span>${stories.length}</span></h3>
             ${stories.map((story) => `
                 <button class="remote-story ${story.problems.length ? "blocked" : ""}" data-action="select-story" data-story-id="${story.id}">
-                    <span>#${story.id} · ${story.remainingHours}h</span>
+                    <span>#${story.id} - ${story.remainingHours}h</span>
                     <strong>${escapeHtml(story.description)}</strong>
                     ${story.problems.length ? `<small>Bloqueos: ${story.problems.map((problem) => escapeHtml(problem.name)).join(", ")}</small>` : ""}
                 </button>
@@ -91,7 +91,7 @@ function renderTeam(root, team) {
             <div>
                 <h2>${escapeHtml(team.name)}</h2>
                 <p>Participantes: ${team.state.participants.map((participant) => escapeHtml(participant.displayName)).join(", ") || "Sin participantes"}</p>
-                <p>Turno activo: <strong>${escapeHtml(active?.displayName ?? "Sin participante activo")}</strong>${isActive ? " · es tu turno" : ""}</p>
+                <p>Turno activo: <strong>${escapeHtml(active?.displayName ?? "Sin participante activo")}</strong>${isActive ? " - es tu turno" : ""}</p>
             </div>
             <div class="team-status">
                 <span>Sprint ${team.state.currentSprint ?? "-"}/${team.state.totalSprints ?? "-"}</span>
