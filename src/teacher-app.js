@@ -83,6 +83,14 @@ async function renderSession(root, sync, sessionId) {
     });
 }
 
+function showTeacherMessage(root, message, type = "info") {
+    const output = root.querySelector("#teacher-output");
+    if (!output) {
+        return;
+    }
+    output.innerHTML = `<div class="remote-${type === "error" ? "error" : "notice"}">${escapeHtml(message)}</div>`;
+}
+
 export function createTeacherApp(root, { sync = createLocalSyncService() } = {}) {
     let currentSessionId = window.localStorage.getItem("scrum-card-game-last-session");
 
@@ -112,22 +120,34 @@ export function createTeacherApp(root, { sync = createLocalSyncService() } = {})
         });
     }
 
-    root.querySelector("#create-session").addEventListener("click", async () => {
-        const session = await sync.createSession({
-            name: root.querySelector("#session-name").value,
-            totalSprints: Number(root.querySelector("#session-sprints").value)
-        });
-        const catalog = createCatalog();
-        for (const name of ["Equipo 1", "Equipo 2", "Equipo 3"]) {
-            await sync.createTeam({
-                sessionId: session.id,
-                name,
-                initialState: createTeamState(name, session.totalSprints, catalog)
-            });
-        }
+    root.querySelector("#create-session").addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = "Creando...";
+        showTeacherMessage(root, "Creando sesion y equipos...");
 
-        currentSessionId = session.id;
-        window.localStorage.setItem("scrum-card-game-last-session", session.id);
-        await renderSession(root, sync, currentSessionId);
+        try {
+            const session = await sync.createSession({
+                name: root.querySelector("#session-name").value,
+                totalSprints: Number(root.querySelector("#session-sprints").value)
+            });
+            const catalog = createCatalog();
+            for (const name of ["Equipo 1", "Equipo 2", "Equipo 3"]) {
+                await sync.createTeam({
+                    sessionId: session.id,
+                    name,
+                    initialState: createTeamState(name, session.totalSprints, catalog)
+                });
+            }
+
+            currentSessionId = session.id;
+            window.localStorage.setItem("scrum-card-game-last-session", session.id);
+            await renderSession(root, sync, currentSessionId);
+        } catch (error) {
+            showTeacherMessage(root, `No se pudo crear la sesion: ${error?.message ?? error}`, "error");
+        } finally {
+            button.disabled = false;
+            button.textContent = "Crear sesion";
+        }
     });
 }

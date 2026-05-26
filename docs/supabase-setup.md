@@ -21,11 +21,11 @@ Tambien se puede hacer desde SQL:
 alter publication supabase_realtime add table teams;
 ```
 
-## 3. Seguridad para piloto
+## 3. Habilitar permisos para el piloto
 
-La aplicacion no usa login todavia. Para una clase piloto sin datos sensibles, se puede dejar RLS desactivado en estas tablas. Eso permite que la clave publica de Supabase cree sesiones y actualice equipos.
+La aplicacion no usa login todavia. Para una clase piloto sin datos sensibles, ejecutar tambien el contenido de `docs/supabase-policies.sql`.
 
-Cuando se quiera endurecer seguridad, el siguiente paso es agregar autenticacion o codigos firmados por docente/alumno antes de habilitar RLS restrictivo.
+Estas politicas permiten que la clave publica cree sesiones y actualice equipos. Cuando se quiera endurecer seguridad, el siguiente paso es agregar autenticacion o codigos firmados por docente/alumno antes de usar RLS restrictivo.
 
 ## 4. URL de prueba
 

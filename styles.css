@@ -1058,6 +1058,15 @@ body {
     padding: 0.75rem;
 }
 
+.remote-notice {
+    background: #e0f2fe;
+    border: 1px solid #38bdf8;
+    border-radius: 8px;
+    color: #075985;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+}
+
 .remote-panel.compact h3 {
     margin: 0.75rem 0 0.35rem;
 }
